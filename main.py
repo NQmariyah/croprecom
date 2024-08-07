@@ -1,9 +1,9 @@
 import pandas as pd
-from keras import Sequential
-from keras.src.layers import LSTM, Dense
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 from sklearn.model_selection import train_test_split
-import numpy as np
+import joblib
+
 
 # Load the CSV file with the correct delimiter
 file_path = 'Crop_recommendation.csv'
