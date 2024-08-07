@@ -28,21 +28,17 @@ print("\nNormalize Data:\n", pd.DataFrame(X_normalized).head())
 # Split the data into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(X_normalized, y, test_size=0.2, random_state=42)
 
-# Reshape data to fit LSTM input
-X_train = np.reshape(X_train, (X_train.shape[0], 1, X_train.shape[1]))
-X_test = np.reshape(X_test, (X_test.shape[0], 1, X_test.shape[1]))
-
-# Build the LSTM model
-model = Sequential()
-model.add(LSTM(50, input_shape=(1, X_train.shape[2])))
-model.add(Dense(len(label_encoder.classes_), activation='softmax'))
-
-# Compile the model
-model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+# Build the Random Forest model
+model = RandomForestClassifier(n_estimators=100, random_state=42)
 
 # Train the model
-model.fit(X_train, y_train, epochs=50, batch_size=32, validation_data=(X_test, y_test))
+model.fit(X_train, y_train)
 
 # Evaluate the model on the test set
-loss, accuracy = model.evaluate(X_test, y_test)
+accuracy = model.score(X_test, y_test)
 print(f"Test Accuracy: {accuracy * 100:.2f}%")
+
+# Save the trained model
+joblib.dump(model, 'crop_prediction_model.joblib')
+joblib.dump(label_encoder, 'label_encoder.joblib')
+joblib.dump(scaler, 'scaler.joblib')
