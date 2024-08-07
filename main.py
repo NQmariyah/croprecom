@@ -1,44 +1,37 @@
-import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.preprocessing import LabelEncoder, MinMaxScaler
-from sklearn.model_selection import train_test_split
+from flask import Flask, request, jsonify
 import joblib
+import numpy as np
 
+# Initialize Flask app
+app = Flask(__name__)
 
-# Load the CSV file with the correct delimiter
-file_path = 'Crop_recommendation.csv'
-data = pd.read_csv(file_path, delimiter=';')
+# Load the trained model
+model = joblib.load('crop_prediction_model.joblib')
 
-# Encode the labels
-label_encoder = LabelEncoder()
-data['label'] = label_encoder.fit_transform(data['label'])
-print("Encode data:\n", data.head())
+# Load the label encoder and scaler (if used during training)
+label_encoder = joblib.load('label_encoder.joblib')
+scaler = joblib.load('scaler.joblib')
 
-# Separate features and labels
-X = data.drop('label', axis=1)
-y = data['label']
-print("\nFeatures (X):\n", X.head())
-print("\nLabels (y):\n", y.head())
+@app.route('/predict', methods=['POST'])
+def predict():
+    # Get the data from the POST request
+    data = request.get_json()
 
-# Normalize the features
-scaler = MinMaxScaler()
-X_normalized = scaler.fit_transform(X)
-print("\nNormalize Data:\n", pd.DataFrame(X_normalized).head())
+    # Convert data into a numpy array or the required format
+    input_data = np.array([[data['N'], data['P'], data['K'], data['temperature'],
+                            data['humidity'], data['pH'], data['rainfall']]])
+    
+    # Normalize the input data using the same scaler as during training
+    input_data = scaler.transform(input_data)
+    
+    # Make prediction
+    prediction = model.predict(input_data)
+    
+    # Convert numpy int32 to Python int
+    prediction_label = label_encoder.inverse_transform(prediction)[0]
+    
+    # Return the result as JSON
+    return jsonify({'prediction': str(prediction_label)})
 
-# Split the data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X_normalized, y, test_size=0.2, random_state=42)
-
-# Build the Random Forest model
-model = RandomForestClassifier(n_estimators=100, random_state=42)
-
-# Train the model
-model.fit(X_train, y_train)
-
-# Evaluate the model on the test set
-accuracy = model.score(X_test, y_test)
-print(f"Test Accuracy: {accuracy * 100:.2f}%")
-
-# Save the trained model
-joblib.dump(model, 'crop_prediction_model.joblib')
-joblib.dump(label_encoder, 'label_encoder.joblib')
-joblib.dump(scaler, 'scaler.joblib')
+if __name__ == '__main__':
+    app.run(debug=True)
